@@ -47,6 +47,15 @@ public class Chart implements Serializable {
     @ApiModelProperty(value = "生成的分析结论")
     private String genResult;
 
+    @ApiModelProperty(value = "任务状态")
+    private String status;
+
+    @ApiModelProperty(value = "用户id")
+    private Long userId;
+
+    @ApiModelProperty(value = "执行信息")
+    private String execMessage;
+
     @ApiModelProperty(value = "创建时间")
     @TableField(fill = FieldFill.INSERT)
     private Date createTime;

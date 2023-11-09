@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.yangbibackend.common.enumeration.ErrorCode;
+import com.example.yangbibackend.common.enumeration.UserRoleEnum;
 import com.example.yangbibackend.common.exception.BusinessException;
 import com.example.yangbibackend.common.constant.PasswordConstant;
 import com.example.yangbibackend.common.constant.UserConstant;
@@ -136,6 +137,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return true;
     }
 
+    /**
+     * 获取当前登录的用户
+     * @param request
+     * @return
+     */
     @Override
     public UserLoginVO getLoginUser(HttpServletRequest request) {
 
@@ -144,6 +150,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         UserLoginVO userLoginVO = UserLoginVO.builder().build();
         BeanUtils.copyProperties(user,userLoginVO);
         return userLoginVO;
+    }
+
+    /**
+     * 判断是否为管理员
+     * @param request
+     * @return
+     */
+    @Override
+    public Boolean isAdmin(HttpServletRequest request) {
+
+        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
+        User user = (User) userObj;
+        return user != null && UserRoleEnum.ADMIN.getValue().equals(user.getUserRole());
     }
 
 }
