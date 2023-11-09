@@ -1,0 +1,27 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  profiles:
+    active: dev
+  #session???? ??
+  session:
+    timeout: 86400
+  main:
+    allow-circular-references: true
+  datasource:
+      driver-class-name: ${bi.datasource.driver-class-name}
+      url: jdbc:mysql://${bi.datasource.host}:${bi.datasource.port}/${bi.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+      username: ${bi.datasource.username}
+      password: ${bi.datasource.password}
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: false
+  global-config:
+    db-config:
+      logic-delete-field: isDelete # ????????????(since 3.3.0,????????????2)
+      logic-delete-value: 1 # ??????(??? 1)
+      logic-not-delete-value: 0 # ??????(??? 0)
+
