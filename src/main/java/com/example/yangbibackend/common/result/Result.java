@@ -18,13 +18,12 @@ public class Result<T> implements Serializable {
         this.data=data;
     }
 
-    public Result(int code, T data) {
-        this(code, "",data );
-    }
-
     public Result(ErrorCode errorCode) {
         this(errorCode.getCode(),  errorCode.getMessage(),null);
     }
 
+    public Result(int code, String message) {
+        this(code, message,null );
+    }
 
 }

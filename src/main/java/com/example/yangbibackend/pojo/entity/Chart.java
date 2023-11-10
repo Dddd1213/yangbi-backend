@@ -21,8 +21,6 @@ import lombok.experimental.Accessors;
  * @since 2023-11-08
  */
 @Data
-@EqualsAndHashCode(callSuper = false)
-@Accessors(chain = true)
 @TableName("chart")
 @ApiModel(value="Chart对象", description="图表信息表")
 public class Chart implements Serializable {

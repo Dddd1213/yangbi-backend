@@ -1,9 +1,12 @@
 package com.example.yangbibackend.config;
 
+import com.example.yangbibackend.interceptor.LoginInterceptor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
 import springfox.documentation.builders.ApiInfoBuilder;
@@ -17,6 +20,22 @@ import springfox.documentation.spring.web.plugins.Docket;
 @Profile({"dev", "test"})
 @Slf4j
 public class WebMvcConfiguration extends WebMvcConfigurationSupport {
+
+    @Autowired
+    LoginInterceptor loginInterceptor;
+
+    /**
+     * 注册登录拦截器
+     *
+     * @param registry
+     */
+    protected void addInterceptors(InterceptorRegistry registry) {
+        log.info("开始注册登录拦截器...");
+        registry.addInterceptor(loginInterceptor)
+                .addPathPatterns("/user/**","/chart/**")
+                .excludePathPatterns("/**/login");
+    }
+
 
     /**
      * 通过knife4j生成接口文档

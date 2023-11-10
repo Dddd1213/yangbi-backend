@@ -1,5 +1,6 @@
 package com.example.yangbibackend.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.yangbibackend.common.enumeration.ErrorCode;
 import com.example.yangbibackend.common.exception.BusinessException;
 import com.example.yangbibackend.common.result.Result;
@@ -8,6 +9,7 @@ import com.example.yangbibackend.pojo.DTO.user.UserLoginDTO;
 import com.example.yangbibackend.pojo.DTO.user.UserRegisterDTO;
 import com.example.yangbibackend.pojo.VO.user.UserLoginVO;
 import com.example.yangbibackend.pojo.VO.user.UserRegisterVO;
+import com.example.yangbibackend.pojo.entity.Chart;
 import com.example.yangbibackend.pojo.entity.User;
 import com.example.yangbibackend.service.UserService;
 import io.swagger.annotations.Api;
@@ -21,7 +23,6 @@ import javax.servlet.http.HttpServletRequest;
 
 @RestController
 @Slf4j
-@Api(tags = "用户相关接口")
 @RequestMapping("/user")
 public class UserController {
 
@@ -30,12 +31,11 @@ public class UserController {
 
 
     /**
-     *
+     *用户注册
      * @param userRegisterDTO
      * @return
      */
     @PostMapping("/register")
-    @ApiOperation(value="用户注册接口")
     public Result<UserRegisterVO> userRegister(@RequestBody UserRegisterDTO userRegisterDTO){
 
         if (userRegisterDTO == null ){
@@ -53,8 +53,13 @@ public class UserController {
         return ResultUtils.success(userRegisterVO);
     }
 
+    /**
+     * 用户登录
+     * @param userLoginDTO
+     * @param request
+     * @return
+     */
     @PostMapping("/login")
-    @ApiOperation(value = "用户登录接口")
     public Result<UserLoginVO> userLogin(@RequestBody UserLoginDTO userLoginDTO, HttpServletRequest request){
 
         String userAccount = userLoginDTO.getUserAccount();
@@ -69,8 +74,12 @@ public class UserController {
         return ResultUtils.success(userLoginVO);
     }
 
+    /**
+     * 用户登出
+     * @param request
+     * @return
+     */
     @PostMapping("/logout")
-    @ApiOperation(value="退出登录")
     public Result<Boolean> userLogout(HttpServletRequest request){
 
         if(request==null){
@@ -81,8 +90,12 @@ public class UserController {
         return ResultUtils.success(result);
     }
 
+    /**
+     * 获取当前登录用户
+     * @param request
+     * @return
+     */
     @GetMapping("/get/login")
-    @ApiOperation(value = "获取当前用户登录信息")
     public Result<UserLoginVO> getLoginUser(HttpServletRequest request){
         if(request==null){
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -90,6 +103,16 @@ public class UserController {
         UserLoginVO userLoginVO = userService.getLoginUser(request);
         return ResultUtils.success(userLoginVO);
     }
+
+//    /**
+//     * 分页获取当前用户创建的资源列表
+//     * @param chartQueryRequest
+//     * @param request
+//     * @return
+//     */
+//    @PostMapping("/my/list/page")
+//    public Result<Page<Chart>> listMyChartByPage(@RequestBody ChartQueryRequest chartQueryRequest,
+//                                                 HttpServletRequest request)
 
 
 

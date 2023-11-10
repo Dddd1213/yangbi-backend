@@ -1,6 +1,7 @@
 package com.example.yangbibackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.yangbibackend.common.enumeration.ErrorCode;
@@ -70,6 +71,20 @@ public class ChartServiceImpl extends ServiceImpl<ChartMapper,Chart> implements 
             throw new BusinessException(ErrorCode.OPERATION_ERROR,"删除图表失败");
         }
         return true;
+    }
+
+    @Override
+    public Page<Chart> listMyChartPage(long current, long size,HttpServletRequest request) {
+        //分页参数
+        Page<Chart> rowPage = new Page(current, size);
+
+        Long userid = userService.getLoginUser(request).getId();
+
+        //queryWrapper组装查询where条件
+        LambdaQueryWrapper<Chart> queryWrapper = new LambdaQueryWrapper<Chart>().eq(Chart::getUserId,userid);
+        rowPage = this.baseMapper.selectPage(rowPage, queryWrapper);
+        return rowPage;
+
     }
 
 
