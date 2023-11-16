@@ -14,6 +14,8 @@ public class ResultUtils {
         return new Result<>(ErrorCode.SUCCESS.getCode(),"ok",data);
     }
 
+
+
     /**
      * 失败
      * @param errorCode

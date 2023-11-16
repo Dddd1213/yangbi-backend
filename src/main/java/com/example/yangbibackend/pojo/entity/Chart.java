@@ -30,6 +30,9 @@ public class Chart implements Serializable {
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
+    @ApiModelProperty(value = "图表名称")
+    private String name;
+
     @ApiModelProperty(value = "分析目标")
     private String goal;
 

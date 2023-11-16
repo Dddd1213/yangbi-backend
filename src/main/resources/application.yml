@@ -1,11 +1,10 @@
 server:
-  port: 8080
+  port: 8088
   servlet:
     context-path: /api
   session:
     cookie:
       max-age: 2592000
-
 
 spring:
   profiles:
@@ -20,12 +19,17 @@ spring:
       url: jdbc:mysql://${bi.datasource.host}:${bi.datasource.port}/${bi.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
       username: ${bi.datasource.username}
       password: ${bi.datasource.password}
+
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: false
   global-config:
     db-config:
-      logic-delete-field: isDelete # ????????????(since 3.3.0,????????????2)
-      logic-delete-value: 1 # ??????(??? 1)
-      logic-not-delete-value: 0 # ??????(??? 0)
-
+      logic-delete-field: isDelete
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+#鱼聪明ai
+yuapi:
+  client:
+    access-key: x51lglz7q6q1ge407lewueknd9eh6j2n
+    secret-key: o4y0ttqbox0f33u005pgquijwv8t06ci
