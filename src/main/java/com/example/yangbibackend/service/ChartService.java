@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.yangbibackend.pojo.DTO.chart.AddChartDTO;
 import com.example.yangbibackend.pojo.DTO.common.DeleteDTO;
 import com.example.yangbibackend.pojo.VO.chart.AddChartVO;
+import com.example.yangbibackend.pojo.VO.chart.BiVO;
 import com.example.yangbibackend.pojo.entity.Chart;
 
 import javax.servlet.http.HttpServletRequest;
@@ -21,4 +22,6 @@ public interface ChartService extends IService<Chart>{
     Boolean delete(DeleteDTO deleteDTO,HttpServletRequest request);
 
     Page<Chart> listMyChartPage(long current, long size, HttpServletRequest request);
+
+//    Boolean createOneChart(String result);
 }

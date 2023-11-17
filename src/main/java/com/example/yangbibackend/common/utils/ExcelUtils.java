@@ -2,8 +2,12 @@ package com.example.yangbibackend.common.utils;
 
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.support.ExcelTypeEnum;
+import com.example.yangbibackend.common.enumeration.ErrorCode;
+import com.example.yangbibackend.common.exception.BusinessException;
+import com.example.yangbibackend.service.ChartService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ResourceUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -39,6 +43,7 @@ public class ExcelUtils {
         //读取表头
         LinkedHashMap<Integer, String> hearderMap = (LinkedHashMap)list.get(0);
         List<String> headerList = hearderMap.values().stream().filter(Objects::nonNull).collect(Collectors.toList());
+
         stringBuilder.append(StringUtils.join(headerList,",")).append("\n");
         for(int i=1;i<list.size();i++){
             LinkedHashMap<Integer, String> dataMap = (LinkedHashMap)list.get(i);

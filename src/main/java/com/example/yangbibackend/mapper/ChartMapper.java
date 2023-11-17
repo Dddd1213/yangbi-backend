@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.example.yangbibackend.pojo.entity.Chart;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.util.List;
+import java.util.Map;
+
 /**
 * @author 31067
 * @description 针对表【chart(图表信息表)】的数据库操作Mapper
@@ -12,6 +15,8 @@ import org.apache.ibatis.annotations.Mapper;
 */
 @Mapper
 public interface ChartMapper extends BaseMapper<Chart> {
+
+    List<Map<String,Object>> queryChartData(String chartId);
 
 }
 

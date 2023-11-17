@@ -1,5 +1,6 @@
 package com.example.yangbibackend.controller;
 
+import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.yangbibackend.common.enumeration.ErrorCode;
 import com.example.yangbibackend.common.exception.BusinessException;
@@ -7,6 +8,7 @@ import com.example.yangbibackend.common.result.Result;
 import com.example.yangbibackend.common.utils.ExcelUtils;
 import com.example.yangbibackend.common.utils.ResultUtils;
 import com.example.yangbibackend.manager.AiManager;
+import com.example.yangbibackend.manager.RedisLimiterManager;
 import com.example.yangbibackend.pojo.DTO.chart.AddChartDTO;
 import com.example.yangbibackend.pojo.DTO.chart.GenChartByAiDTO;
 import com.example.yangbibackend.pojo.DTO.chart.QueryChartDTO;
@@ -25,6 +27,8 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletRequest;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 @RestController
 @RequestMapping("/chart")
@@ -39,6 +43,9 @@ public class ChartController {
 
     @Autowired
     UserService userService;
+
+    @Autowired
+    private RedisLimiterManager redisLimiterManager;
 
     @PostMapping("/add")
     public Result<AddChartVO> addChart(@RequestBody AddChartDTO addChartDTO, HttpServletRequest request){
@@ -100,6 +107,23 @@ public class ChartController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"目标为空");
         }
 
+        //校验文件大小
+        long size = multipartFile.getSize();
+        final long ONE_MB = 1024*1024L;
+        if(size>ONE_MB){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"不支持1M以上的文件上传");
+        }
+        //校验文件后缀
+        String fileName = multipartFile.getOriginalFilename();
+        String suffix = FileUtil.getSuffix(fileName);
+        List<String> validList = Arrays.asList("xlsx");
+        if(!validList.contains(suffix)){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"文件格式错误");
+        }
+        //限流
+        Long id = userService.getLoginUser(request).getId();
+        redisLimiterManager.doRateLimit("genChartByAi"+id.toString());
+
 //        final String prompt = "你是一个数据分析师和前端开发专家，接下来我会按照以下固定格式给你提供内容：\n" +
 //           "分析需求：\n" +
 //           "{数据分析的需求或者目标}\n" +
@@ -120,14 +144,19 @@ public class ChartController {
         String result = ExcelUtils.excelToCsv(multipartFile);
         userInput.append("原始数据").append(result).append("\n");
 
+//        Boolean oneChart = chartService.createOneChart(result);
+//        if(!oneChart){
+//            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"分表操作失败");
+//        }
+
         String userOutput = aiManager.doChart(userInput.toString());
         String[] split = userOutput.split("【【【【【");
         if(split.length<3){
             throw new BusinessException(ErrorCode.SYSTEM_ERROR,"Ai生成错误");
         }
         BiVO biVO = new BiVO();
-        biVO.setGenChart(split[1]);
-        biVO.setGenResult(split[2]);
+        biVO.setGenChart(split[1].trim());
+        biVO.setGenResult(split[2].trim());
 
         //把图表插入数据库
         Chart chart = new Chart();
@@ -138,11 +167,12 @@ public class ChartController {
         chart.setGenChart(split[1]);
         chart.setGenResult(split[2]);
         chart.setUserId(userService.getLoginUser(request).getId());
-
         boolean b = chartService.save(chart);
         if(!b){
             throw new BusinessException(ErrorCode.SYSTEM_ERROR,"图表保存失败");
         }
+
+        biVO.setCharId(chart.getId());
 
         return ResultUtils.success(biVO);
     }

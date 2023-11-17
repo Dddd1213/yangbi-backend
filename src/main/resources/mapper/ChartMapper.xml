@@ -26,4 +26,8 @@
         createTime,updateTime,isDelete,
         `status`,userId,execMessage
     </sql>
+
+    <select id="queryChartData" parameterType="string" resultType="list">
+        select * from chart_#{chartId}
+    </select>
 </mapper>

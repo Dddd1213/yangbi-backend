@@ -12,4 +12,6 @@ public class BiVO {
 
     private String genResult;
 
+    private Long charId;
+
 }

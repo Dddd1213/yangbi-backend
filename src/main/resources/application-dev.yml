@@ -6,3 +6,9 @@ bi:
     database: bi
     username: root
     password: root
+  redis:
+    database: 1
+    host: 192.168.232.135
+    password: 1523025069
+    port: 6379
+    timeout: 5000

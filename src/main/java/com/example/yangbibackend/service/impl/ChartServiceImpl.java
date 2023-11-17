@@ -10,15 +10,18 @@ import com.example.yangbibackend.mapper.ChartMapper;
 import com.example.yangbibackend.pojo.DTO.chart.AddChartDTO;
 import com.example.yangbibackend.pojo.DTO.common.DeleteDTO;
 import com.example.yangbibackend.pojo.VO.chart.AddChartVO;
+import com.example.yangbibackend.pojo.VO.chart.BiVO;
 import com.example.yangbibackend.pojo.VO.user.UserLoginVO;
 import com.example.yangbibackend.pojo.entity.Chart;
 import com.example.yangbibackend.service.ChartService;
 import com.example.yangbibackend.service.UserService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Date;
 
 /**
 * @author 31067
@@ -26,10 +29,14 @@ import javax.servlet.http.HttpServletRequest;
 * @createDate 2023-11-08 16:08:43
 */
 @Service
+@Slf4j
 public class ChartServiceImpl extends ServiceImpl<ChartMapper,Chart> implements ChartService {
 
     @Autowired
     UserService userService;
+
+    @Autowired
+    ChartMapper chartMapper;
 
     @Override
     public AddChartVO addChart(AddChartDTO addChartDTO, HttpServletRequest request) {
@@ -86,6 +93,15 @@ public class ChartServiceImpl extends ServiceImpl<ChartMapper,Chart> implements 
         return rowPage;
 
     }
+
+//    @Override
+//    public Boolean createOneChart(String result) {
+//        String[] split = result.split("[,\n]");
+//
+//        log.info(split.toString());
+//
+//        return true;
+//    }
 
 
 }
