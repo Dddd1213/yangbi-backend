@@ -26,10 +26,10 @@ public class AiManager {
         devChatRequest.setModelId(1659171950288818178L);
         devChatRequest.setMessage(message);
         BaseResponse<DevChatResponse> response = yuCongMingClient.doChat(devChatRequest);
-//        System.out.println(response.getData());
         if(response==null){
             throw new BusinessException(ErrorCode.SYSTEM_ERROR,"ai响应错误");
         }
+        System.out.println("111"+response.getData());
         return response.getData().getContent();
     }
 

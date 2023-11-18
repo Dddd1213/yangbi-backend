@@ -30,6 +30,7 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
      *
      * @param registry
      */
+    @Override
     protected void addInterceptors(InterceptorRegistry registry) {
         log.info("开始注册登录拦截器...");
         registry.addInterceptor(loginInterceptor)
@@ -62,9 +63,9 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
     public Docket docket() {
         log.info("准备生成接口文档...");
         ApiInfo apiInfo = new ApiInfoBuilder()
-                .title("智能羊BI平台接口文档")
+                .title("数悦ai数据分析平台接口文档")
                 .version("2.0")
-                .description("智能羊BI平台接口文档")
+                .description("数悦ai数据分析平台接口文档")
                 .build();
         Docket docket = new Docket(DocumentationType.SWAGGER_2)
                 .apiInfo(apiInfo)
@@ -78,6 +79,7 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
      * 设置静态资源映射
      * @param registry
      */
+    @Override
     protected void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/doc.html").addResourceLocations("classpath:/META-INF/resources/");
         registry.addResourceHandler("/webjars/**").addResourceLocations("classpath:/META-INF/resources/webjars/");

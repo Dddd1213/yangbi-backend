@@ -29,6 +29,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadPoolExecutor;
 
 @RestController
 @RequestMapping("/chart")
@@ -46,6 +48,10 @@ public class ChartController {
 
     @Autowired
     private RedisLimiterManager redisLimiterManager;
+
+    @Autowired
+    ThreadPoolExecutor threadPoolExecutor;
+
 
     @PostMapping("/add")
     public Result<AddChartVO> addChart(@RequestBody AddChartDTO addChartDTO, HttpServletRequest request){
@@ -135,6 +141,7 @@ public class ChartController {
 //           "【【【【【\n" +
 //           "{明确的数据分析结论、越详细越好，不要生成多余的注释}";
 
+        //拼接分析需求和原始数据输入
         StringBuilder userInput = new StringBuilder();
 //        userInput.append("你是一个数据分析师，接下来我会给你我的分析目标和数据，请告诉我你的分析结论").append("\n");
         userInput.append("分析需求：").append(goal).append("\n");
@@ -149,32 +156,66 @@ public class ChartController {
 //            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"分表操作失败");
 //        }
 
-        String userOutput = aiManager.doChart(userInput.toString());
-        String[] split = userOutput.split("【【【【【");
-        if(split.length<3){
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"Ai生成错误");
-        }
-        BiVO biVO = new BiVO();
-        biVO.setGenChart(split[1].trim());
-        biVO.setGenResult(split[2].trim());
-
         //把图表插入数据库
         Chart chart = new Chart();
         chart.setName(name);
         chart.setGoal(goal);
+        chart.setStatus("排队中");
         chart.setChartData(result);
         chart.setChartType(chartType);
-        chart.setGenChart(split[1]);
-        chart.setGenResult(split[2]);
         chart.setUserId(userService.getLoginUser(request).getId());
+
         boolean b = chartService.save(chart);
         if(!b){
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"图表保存失败");
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"原始数据保存失败");
         }
 
+        BiVO biVO = new BiVO();
         biVO.setCharId(chart.getId());
+        CompletableFuture.runAsync(()->{
+
+            Chart chart1 = new Chart();
+            chart1.setId(chart.getId());
+            chart1.setStatus("ai分析中");
+            boolean c = chartService.updateById(chart1);
+            if(!c){
+                handleChartUpdateError(chart.getId(), "更新图表执行中状态失败");
+                return;
+            }
+
+            //调用ai
+            String userOutput = aiManager.doChart(userInput.toString());
+            String[] split = userOutput.split("【【【【【");
+            if(split.length<3){
+                handleChartUpdateError(chart.getId(), "AI 生成错误");
+                return;
+            }
+            biVO.setGenChart(split[1].trim());
+            biVO.setGenResult(split[2].trim());
+
+            Chart chart2 = new Chart();
+            chart2.setId(chart.getId());
+            chart2.setGenChart(split[1].trim());
+            chart2.setGenResult(split[2].trim());
+            chart2.setStatus("生成完毕");
+            c = chartService.updateById(chart2);
+            if(!c){
+                handleChartUpdateError(chart.getId(), "更新图表成功状态失败");
+            }
+
+        },threadPoolExecutor);
 
         return ResultUtils.success(biVO);
+    }
+    private void handleChartUpdateError(long chartId, String execMessage) {
+        Chart updateChartResult = new Chart();
+        updateChartResult.setId(chartId);
+        updateChartResult.setStatus("failed");
+        updateChartResult.setExecMessage("execMessage");
+        boolean updateResult = chartService.updateById(updateChartResult);
+        if (!updateResult) {
+            log.error("更新图表失败状态失败" + chartId + "," + execMessage);
+        }
     }
 
 }
