@@ -15,16 +15,26 @@ spring:
   main:
     allow-circular-references: true
   datasource:
-      driver-class-name: ${bi.datasource.driver-class-name}
-      url: jdbc:mysql://${bi.datasource.host}:${bi.datasource.port}/${bi.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
-      username: ${bi.datasource.username}
-      password: ${bi.datasource.password}
+      driver-class-name: ${yangmao.datasource.driver-class-name}
+      url: jdbc:mysql://${yangmao.datasource.host}:${yangmao.datasource.port}/${yangmao.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+      username: ${yangmao.datasource.username}
+      password: ${yangmao.datasource.password}
   redis:
-    database: ${bi.redis.database}
-    host: ${bi.redis.host}
-    port: ${bi.redis.port}
-    timeout: ${bi.redis.timeout}
-    password: ${bi.redis.password}
+    database: ${yangmao.redis.database}
+    host: ${yangmao.redis.host}
+    port: ${yangmao.redis.port}
+    timeout: ${yangmao.redis.timeout}
+    password: ${yangmao.redis.password}
+  rabbitmq:
+    host: ${yangmao.rabbitmq.host}
+    port: ${yangmao.rabbitmq.port}
+    virtual-host: ${yangmao.rabbitmq.virtual-host}
+    username: ${yangmao.rabbitmq.username}
+    password: ${yangmao.rabbitmq.password}
+    listener:
+      direct:
+        acknowledge-mode: manual
+
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: false

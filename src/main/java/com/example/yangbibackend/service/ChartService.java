@@ -9,6 +9,7 @@ import com.example.yangbibackend.pojo.VO.chart.BiVO;
 import com.example.yangbibackend.pojo.entity.Chart;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
 * @author 31067
@@ -19,9 +20,11 @@ public interface ChartService extends IService<Chart>{
 
     AddChartVO addChart(AddChartDTO addChartDTO, HttpServletRequest request);
 
-    Boolean delete(DeleteDTO deleteDTO,HttpServletRequest request);
+    public Boolean delete(DeleteDTO deleteDTO,Long userid);
 
     Page<Chart> listMyChartPage(long current, long size, HttpServletRequest request);
+
+    List<Chart> listMyChart(Long userid);
 
 //    Boolean createOneChart(String result);
 }

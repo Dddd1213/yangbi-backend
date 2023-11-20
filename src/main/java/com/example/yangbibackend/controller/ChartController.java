@@ -9,6 +9,7 @@ import com.example.yangbibackend.common.utils.ExcelUtils;
 import com.example.yangbibackend.common.utils.ResultUtils;
 import com.example.yangbibackend.manager.AiManager;
 import com.example.yangbibackend.manager.RedisLimiterManager;
+import com.example.yangbibackend.mq.MessageProducer;
 import com.example.yangbibackend.pojo.DTO.chart.AddChartDTO;
 import com.example.yangbibackend.pojo.DTO.chart.GenChartByAiDTO;
 import com.example.yangbibackend.pojo.DTO.chart.QueryChartDTO;
@@ -21,6 +22,7 @@ import com.example.yangbibackend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -52,6 +54,9 @@ public class ChartController {
     @Autowired
     ThreadPoolExecutor threadPoolExecutor;
 
+    @Autowired
+    MessageProducer messageProducer;
+
 
     @PostMapping("/add")
     public Result<AddChartVO> addChart(@RequestBody AddChartDTO addChartDTO, HttpServletRequest request){
@@ -75,7 +80,8 @@ public class ChartController {
         if(request==null){
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        Boolean result = chartService.delete(deleteDTO,request);
+        Long id = userService.getLoginUser(request).getId();
+        Boolean result = chartService.delete(deleteDTO,id);
 
         return ResultUtils.success(result);
     }
@@ -102,6 +108,25 @@ public class ChartController {
         return ResultUtils.success(chartPage);
     }
 
+    @PostMapping("/my/list")
+    public Result<List<Chart>> listMyChart(@RequestBody QueryChartDTO queryChartDTO,
+                                          HttpServletRequest request){
+        if (queryChartDTO == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Long userid = userService.getLoginUser(request).getId();
+        List<Chart> chartList = chartService.listMyChart(userid);
+
+        return ResultUtils.success(chartList);
+    }
+    /**
+     * ai生成（线程池异步）
+     * @param multipartFile
+     * @param genChartByAiDTO
+     * @param request
+     * @return
+     * @throws IOException
+     */
     @PostMapping("/gen")
     public Result<BiVO> genChartByAi(@RequestPart("file")MultipartFile multipartFile,
                                        GenChartByAiDTO genChartByAiDTO, HttpServletRequest request) throws IOException {
@@ -207,7 +232,71 @@ public class ChartController {
 
         return ResultUtils.success(biVO);
     }
-    private void handleChartUpdateError(long chartId, String execMessage) {
+
+    /**
+     * ai生成（mq异步）
+     * @param multipartFile
+     * @param genChartByAiDTO
+     * @param request
+     * @return
+     * @throws IOException
+     */
+    @PostMapping("/genmq")
+    public Result<BiVO> genChartByAiMq(@RequestPart("file")MultipartFile multipartFile,
+                                     GenChartByAiDTO genChartByAiDTO, HttpServletRequest request) throws IOException {
+        String name = genChartByAiDTO.getName();
+        String goal = genChartByAiDTO.getGoal();
+        String chartType = genChartByAiDTO.getChartType();
+
+        if(StringUtils.isAnyBlank(goal)){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"目标为空");
+        }
+
+        //校验文件大小
+        long size = multipartFile.getSize();
+        final long ONE_MB = 1024*1024L;
+        if(size>ONE_MB){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"不支持1M以上的文件上传");
+        }
+        //校验文件后缀
+        String fileName = multipartFile.getOriginalFilename();
+        String suffix = FileUtil.getSuffix(fileName);
+        List<String> validList = Arrays.asList("xlsx");
+        if(!validList.contains(suffix)){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"文件格式错误");
+        }
+        //限流
+        Long id = userService.getLoginUser(request).getId();
+        redisLimiterManager.doRateLimit("genChartByAi"+id.toString());
+
+        String result = ExcelUtils.excelToCsv(multipartFile);
+
+        //把原始图表插入数据库
+        Chart chart = new Chart();
+        chart.setName(name);
+        chart.setGoal(goal);
+        chart.setStatus("排队中");
+        chart.setChartData(result);
+        chart.setChartType(chartType);
+        chart.setUserId(userService.getLoginUser(request).getId());
+
+        boolean b = chartService.save(chart);
+        if(!b){
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"原始数据保存失败");
+        }
+
+        messageProducer.sendMessage(chart.getId().toString());
+
+        BiVO biVO = new BiVO();
+        biVO.setCharId(chart.getId());
+        biVO.setGenChart(chart.getGenChart());
+        biVO.setGenResult(chart.getGenResult());
+
+        return ResultUtils.success(biVO);
+    }
+
+
+    public void handleChartUpdateError(long chartId, String execMessage) {
         Chart updateChartResult = new Chart();
         updateChartResult.setId(chartId);
         updateChartResult.setStatus("failed");

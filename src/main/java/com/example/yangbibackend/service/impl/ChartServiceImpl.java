@@ -13,15 +13,19 @@ import com.example.yangbibackend.pojo.VO.chart.AddChartVO;
 import com.example.yangbibackend.pojo.VO.chart.BiVO;
 import com.example.yangbibackend.pojo.VO.user.UserLoginVO;
 import com.example.yangbibackend.pojo.entity.Chart;
+import com.example.yangbibackend.pojo.entity.User;
 import com.example.yangbibackend.service.ChartService;
 import com.example.yangbibackend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
+import java.util.List;
 
 /**
 * @author 31067
@@ -58,18 +62,19 @@ public class ChartServiceImpl extends ServiceImpl<ChartMapper,Chart> implements 
     }
 
     @Override
-    public Boolean delete(DeleteDTO deleteDTO,HttpServletRequest request) {
+    @CacheEvict(cacheNames = "listMyChart",key = "#userid.toString()")
+    public Boolean delete(DeleteDTO deleteDTO,Long userid) {
 
         Long deleteId = deleteDTO.getId();
-        UserLoginVO loginUser = userService.getLoginUser(request);
+        User loginUser = userService.getById(userid);
 
         Chart chart = this.getById(deleteId);
         if(chart==null){
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
         }
         Long chartUserId = chart.getUserId();
-        //只有管理员和用户本人可以删除
-        if(!userService.isAdmin(request)&&!chartUserId.equals(loginUser.getId())){
+        //只有用户本人可以删除
+        if(!chartUserId.equals(loginUser.getId())){
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
 
@@ -94,14 +99,15 @@ public class ChartServiceImpl extends ServiceImpl<ChartMapper,Chart> implements 
 
     }
 
-//    @Override
-//    public Boolean createOneChart(String result) {
-//        String[] split = result.split("[,\n]");
-//
-//        log.info(split.toString());
-//
-//        return true;
-//    }
+    @Override
+    @Cacheable(cacheNames = "listMyChart",key = "#userid.toString()")
+    public List<Chart> listMyChart(Long userid) {
+
+        LambdaQueryWrapper<Chart> chartLambdaQueryWrapper = new LambdaQueryWrapper<Chart>().eq(Chart::getUserId,userid);
+        List<Chart> chartList = this.list(chartLambdaQueryWrapper);
+
+        return chartList;
+    }
 
 
 }

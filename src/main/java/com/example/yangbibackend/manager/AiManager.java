@@ -29,7 +29,7 @@ public class AiManager {
         if(response==null){
             throw new BusinessException(ErrorCode.SYSTEM_ERROR,"ai响应错误");
         }
-        System.out.println("111"+response.getData());
+//        System.out.println("111"+response.getData());
         return response.getData().getContent();
     }
 
