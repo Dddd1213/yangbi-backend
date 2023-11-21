@@ -9,6 +9,7 @@ import com.example.yangbibackend.manager.AiManager;
 import com.example.yangbibackend.pojo.VO.chart.BiVO;
 import com.example.yangbibackend.pojo.entity.Chart;
 import com.example.yangbibackend.service.ChartService;
+import com.example.yangbibackend.webSocket.WebSocketServer;
 import com.rabbitmq.client.Channel;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +38,9 @@ public class MessageConsumer {
 
     @Autowired
     ThreadPoolExecutor threadPoolExecutor;
+
+    @Autowired
+    WebSocketServer webSocketServer;
 
 
     @RabbitListener(queues = BiMqConstant.BI_QUEUE_NAME,ackMode = "MANUAL")
@@ -106,6 +110,7 @@ public class MessageConsumer {
                         chartController.handleChartUpdateError(chartId, "更新图表成功状态失败");
                     }
 //                },threadPoolExecutor);
+        webSocketServer.sendToAllClient("图表生成成功，请前往【图表中心】查看");
         // 消息确认
         channel.basicAck(deliveryTag, false);
     }
@@ -124,6 +129,8 @@ public class MessageConsumer {
         chart.setId(chartId);
         chart.setStatus("生成失败");
         chartService.updateById(chart);
+
+        webSocketServer.sendToAllClient("图表生成失败，请稍后重试");
         channel.basicAck(deliveryTag,false);
     }
 
