@@ -6,6 +6,7 @@ import com.example.yangbibackend.common.enumeration.ErrorCode;
 import com.example.yangbibackend.common.exception.BusinessException;
 import com.example.yangbibackend.common.result.Result;
 import com.example.yangbibackend.common.utils.ExcelUtils;
+import com.example.yangbibackend.common.utils.FutureUtil;
 import com.example.yangbibackend.common.utils.ResultUtils;
 import com.example.yangbibackend.manager.AiManager;
 import com.example.yangbibackend.manager.RedisLimiterManager;
@@ -31,8 +32,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.*;
 
 @RestController
 @RequestMapping("/chart")
@@ -119,6 +119,7 @@ public class ChartController {
 
         return ResultUtils.success(chartList);
     }
+
     /**
      * ai生成（线程池异步）
      * @param multipartFile
@@ -168,7 +169,6 @@ public class ChartController {
 
         //拼接分析需求和原始数据输入
         StringBuilder userInput = new StringBuilder();
-//        userInput.append("你是一个数据分析师，接下来我会给你我的分析目标和数据，请告诉我你的分析结论").append("\n");
         userInput.append("分析需求：").append(goal).append("\n");
         if(StringUtils.isNotBlank(chartType)){
             userInput.append("，请使用"+chartType+"进行代码生成");
@@ -176,10 +176,6 @@ public class ChartController {
         String result = ExcelUtils.excelToCsv(multipartFile);
         userInput.append("原始数据").append(result).append("\n");
 
-//        Boolean oneChart = chartService.createOneChart(result);
-//        if(!oneChart){
-//            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"分表操作失败");
-//        }
 
         //把图表插入数据库
         Chart chart = new Chart();
@@ -197,13 +193,25 @@ public class ChartController {
 
         BiVO biVO = new BiVO();
         biVO.setCharId(chart.getId());
-        CompletableFuture.runAsync(()->{
+
+
+        /**
+         * 使用线程池
+         */
+        // 任务队列已满
+        if (threadPoolExecutor.getQueue().size() > threadPoolExecutor.getMaximumPoolSize()) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "当前任务队列已满");
+        }
+
+
+        CompletableFuture future = FutureUtil.runAsync(2, TimeUnit.SECONDS, () -> {
 
             Chart chart1 = new Chart();
             chart1.setId(chart.getId());
             chart1.setStatus("ai分析中");
             boolean c = chartService.updateById(chart1);
-            if(!c){
+            if (!c) {
+
                 handleChartUpdateError(chart.getId(), "更新图表执行中状态失败");
                 return;
             }
@@ -211,8 +219,12 @@ public class ChartController {
             //调用ai
             String userOutput = aiManager.doChart(userInput.toString());
             String[] split = userOutput.split("【【【【【");
-            if(split.length<3){
+            if (split.length < 3) {
                 handleChartUpdateError(chart.getId(), "AI 生成错误");
+                return;
+            }
+
+            if(chart.getStatus()=="生成失败(超时!!)"){
                 return;
             }
             biVO.setGenChart(split[1].trim());
@@ -223,12 +235,42 @@ public class ChartController {
             chart2.setGenChart(split[1].trim());
             chart2.setGenResult(split[2].trim());
             chart2.setStatus("生成完毕");
+            if(chart.getStatus()=="生成失败(超时!!)"){
+                return;
+            }
             c = chartService.updateById(chart2);
-            if(!c){
+            if (!c) {
                 handleChartUpdateError(chart.getId(), "更新图表成功状态失败");
             }
 
-        },threadPoolExecutor);
+        });
+
+        future.exceptionally(throwable -> {
+            Chart updateChartFailed = new Chart();
+            updateChartFailed.setId(chart.getId());
+            updateChartFailed.setStatus("生成失败(超时!!)");
+            chartService.updateById(updateChartFailed);
+            future.cancel(true);
+            future.completeExceptionally(new CancellationException("Task was cancelled"));
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"处理超时");
+        });
+
+
+        //,threadPoolExecutor
+////等太久，抛异常，超时时间（先设为10s方便测试）
+        //这种方式会让线程在这等10s,因为get方法是阻塞的
+//        try {
+//            completableFuture.get(10, TimeUnit.SECONDS);
+//
+//        } catch (Exception e) {
+//            // 超时失败了
+//            Chart updateChartFailed = new Chart();
+//            updateChartFailed.setId(chart.getId());
+//            updateChartFailed.setStatus("生成失败(超时)");
+//            chartService.updateById(updateChartFailed);
+//            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"图表生成超时");
+//        }
+
 
         return ResultUtils.success(biVO);
     }
@@ -243,7 +285,7 @@ public class ChartController {
      */
     @PostMapping("/genmq")
     public Result<BiVO> genChartByAiMq(@RequestPart("file")MultipartFile multipartFile,
-                                     GenChartByAiDTO genChartByAiDTO, HttpServletRequest request) throws IOException {
+                                     GenChartByAiDTO genChartByAiDTO, HttpServletRequest request) throws IOException, InterruptedException {
         String name = genChartByAiDTO.getName();
         String goal = genChartByAiDTO.getGoal();
         String chartType = genChartByAiDTO.getChartType();
@@ -299,7 +341,7 @@ public class ChartController {
     public void handleChartUpdateError(long chartId, String execMessage) {
         Chart updateChartResult = new Chart();
         updateChartResult.setId(chartId);
-        updateChartResult.setStatus("failed");
+        updateChartResult.setStatus("生成失败（数据保存）");
         updateChartResult.setExecMessage("execMessage");
         boolean updateResult = chartService.updateById(updateChartResult);
         if (!updateResult) {

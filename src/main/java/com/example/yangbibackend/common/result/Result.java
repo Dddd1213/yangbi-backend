@@ -26,4 +26,6 @@ public class Result<T> implements Serializable {
         this(code, message,null );
     }
 
+
+
 }

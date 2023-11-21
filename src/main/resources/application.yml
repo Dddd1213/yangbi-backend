@@ -34,6 +34,12 @@ spring:
     listener:
       direct:
         acknowledge-mode: manual
+        retry:
+          enabled: true
+          max-attempts: 5
+          initial-interval: 5000
+          multiplier: 1.5
+          max-interval: 60000
 
 mybatis-plus:
   configuration:
@@ -48,3 +54,9 @@ yuapi:
   client:
     access-key: x51lglz7q6q1ge407lewueknd9eh6j2n
     secret-key: o4y0ttqbox0f33u005pgquijwv8t06ci
+xfun:
+  open:
+    appid: ${yangmao.xfun.open.appid}
+    apiSecret: ${yangmao.xfun.open.apiSecret}
+    hostUrl: ${yangmao.xfun.open.hostUrl}
+    apiKey: ${yangmao.xfun.open.apiKey}

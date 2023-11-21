@@ -1,6 +1,8 @@
 package com.example.yangbibackend.config;
 
+import com.example.yangbibackend.hander.CustomRejectedExecutionHandler;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,6 +17,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Configuration
 public class ThreadPoolExecutorConfig {
+
 
     @Bean
     public ThreadPoolExecutor threadPoolExecutor(){
@@ -32,8 +35,8 @@ public class ThreadPoolExecutorConfig {
             }
         };
 
-        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(1,1,100,
-                TimeUnit.SECONDS,new ArrayBlockingQueue<>(1),threadFactory);
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(1,2,100,
+                TimeUnit.SECONDS,new ArrayBlockingQueue<>(10),threadFactory, new CustomRejectedExecutionHandler());
         return threadPoolExecutor;
     }
 

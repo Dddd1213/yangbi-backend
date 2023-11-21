@@ -29,4 +29,6 @@ public class ResultUtils {
     public static <T> Result<T> error(int code, String message) {
         return new Result<>(code,message);
     }
+
+
 }
